@@ -9,14 +9,10 @@ int main() {
   // keep getting data from the client and displaying it
   printf("shm_seg->futex_turn address: %p\n", &shm_seg->futex_turn);
   while (true) {
-    // wait for data
-    if (shm_seg->futex_turn == CLIENT) {
-      shm_seg->futex_turn = SERVER;
-    }
-
     // waits until it's NOT server.
     // futex_wait(&shm_seg->futex_turn, CLIENT);
-    drepper_lock(&shm_seg->cnt_lck);
+    fxsem_down(
+        &shm_seg->empty); // wait until the buffer is empty/cleared for writing
     drepper_lock(&shm_seg->data_mtx);
     if (shm_seg->futex_turn == FINISHED) {
       exit(0);
@@ -28,10 +24,11 @@ int main() {
     // sleep for 0.2s since otherwise the program moves too fast (since the
     // client's operations are not expensive enough), causing the CPU to max out
     // (incrementing 8 integers is really not very real-life).
-    nanosleep((const struct timespec[]){{0, 100000000L}}, NULL);
+    // nanosleep((const struct timespec[]){{0, 100000000L}}, NULL);
 
     drepper_unlock(&shm_seg->data_mtx);
-    drepper_unlock(&shm_seg->srv_lck);
+    fxsem_up(&shm_seg->full); // tell the consumer that the buffer is full and
+                              // ready for consumption
     /*shm_seg->futex_turn = SERVER; // TODO cmpxchg this atomically between
     server
                                   // and client, not that it should matter...

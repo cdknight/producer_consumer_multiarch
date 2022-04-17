@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drepper_mutex.h"
+#include "fxsem.h"
 #include <errno.h>
 #include <linux/futex.h>
 #include <stdbool.h>
@@ -20,8 +21,10 @@ typedef struct {
   uint32_t op_buffer[OP_BUFFER_SIZE];
   uint32_t futex_turn;
   drepper_mutex_t data_mtx;
-  drepper_mutex_t cnt_lck; // client lock
-  drepper_mutex_t srv_lck; // server lock
+  fxsem_t empty; // to block the client from adding more data until the server
+                 // has emptied the buffer
+  fxsem_t full;  // to block the server from printing until the client has
+                 // populated the buffer
 } offload_process_t;
 
 // TODO move to shm_open
@@ -35,8 +38,8 @@ offload_process_t *get_shm_ptr(bool create) {
       shm_dat->op_buffer[i] = 0;
     }
     drepper_init(&shm_dat->data_mtx);
-    drepper_init(&shm_dat->srv_lck);
-    drepper_init(&shm_dat->cnt_lck);
+    fxsem_init(&shm_dat->empty);
+    fxsem_init(&shm_dat->full);
   }
   return shm_dat;
 }

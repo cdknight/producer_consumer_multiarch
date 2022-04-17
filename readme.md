@@ -16,7 +16,7 @@ Basically my solution to this problem boiled down to this:
 * I use a piece of shared memory between the host environment and the emulated environment to send data and recieve to/from the producer.
 * In order to synchronise the execution (eg. wait for the producer to finish its function, wait for the consumer to hand-off execution to the producer, etc.), I **spun the CPU**, wasting CPU cycles and making my program horribly inefficient. This was because I had no idea that **condition variables** were a thing.
 * I then tried using `pthread_cond_t` and other things from the standard library. However, nothing worked. But condition variables worked when I tried an x86 to x86 approach (eg. nothing in an emulator). The **reason you can't just use `pthread_cond_t` for this is since the struct sizes are different depending on CPU arch, so when you try instantiating a conditional variable in the host environment the ARM libc is going to be addressing completely different parts of the C struct due to the size differences.** You thus have to implement your own synchronisation types that are **the same size on both platforms.** 
-* The best way to do this, at least on Linux, is using the `futex(2)` system call. I am not smart enough to figure out how to implement a mutex myself (because of all the crazy race conditions), but Ulrich Drepper is. So I read his whitepaper and implemented a mutex using futexes. Maybe I am smart enough to implement my own semaphore, which can also be used to solve this problem. In fact, I believe I am using my mutex more like a semaphore than a mutex. So... maybe I should just use a sempahore.
+* The best way to do this, at least on Linux, is using the `futex(2)` system call. I am not smart enough to figure out how to implement a mutex myself (because of all the crazy race conditions), but Ulrich Drepper is. So I read the whitepaper and I did. Then I realized I also need a semaphore. So I also implemented a semaphore (although). 
 * So I used Ulrich Drepper's mutex implementation that uses futexes, which will only require a 32-bit integer regardless of platform, and now I am able to solve this variant of the producer-consumer problem **without wasting CPU cycles and spinning my CPU.** Yay!
 
 **This repo is my testing/experimentation code that proves that I can indeed synchronise two processes in an ARMv7 and an x86 environment using SHM.** Now that this works, it should be very easy to just scale this to my library-calling project. 
@@ -39,6 +39,5 @@ Basically my solution to this problem boiled down to this:
 
 I plan to make the server automatically spawn the QEMU process as a child in the future (most of this will go into a different repo)
 
-Thanks to Ulrich Drepper's fun whitepaper, and using mutexes in a really wrong way (unlocking mutexes from a process that doesn't even hold a lock on it), behold.
-Synchronisation. 
+Thanks to Ulrich Drepper's fun whitepaper, and some semaphores, behold. Synchronisation.
 

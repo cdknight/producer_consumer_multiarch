@@ -11,12 +11,11 @@ int main() {
     // wait for data
     // this will only ever happen once and once we start forking it will never
     // happen
-    if (shm_seg->futex_turn == CLIENT) {
-      while (shm_seg->futex_turn != SERVER) {
-      }
-    }
 
-    drepper_lock(&shm_seg->srv_lck);
+    fxsem_up(&shm_seg->empty);  // tells the client that the buffer is now
+                                // empty/ready for writing
+    fxsem_down(&shm_seg->full); // wait until the client has populated the
+                                // buffer with fresh data
     drepper_lock(&shm_seg->data_mtx);
     printf("[ ");
     for (int i = 0; i < OP_BUFFER_SIZE; ++i) {
@@ -24,7 +23,6 @@ int main() {
     }
     printf("]\n");
     drepper_unlock(&shm_seg->data_mtx);
-    drepper_unlock(&shm_seg->cnt_lck);
     // the thing needs to explicitly wait for the other side to finish its turn
     // before heading into a drepper_lock
 
