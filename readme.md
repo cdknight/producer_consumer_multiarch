@@ -19,6 +19,8 @@ Basically my solution to this problem boiled down to this:
 * The best way to do this, at least on Linux, is using the `futex(2)` system call. I am not smart enough to figure out how to implement a mutex myself (because of all the crazy race conditions), but Ulrich Drepper is. So I read his whitepaper and implemented a mutex using futexes. Maybe I am smart enough to implement my own semaphore, which can also be used to solve this problem. In fact, I believe I am using my mutex more like a semaphore than a mutex. So... maybe I should just use a sempahore.
 * So I used Ulrich Drepper's mutex implementation that uses futexes, which will only require a 32-bit integer regardless of platform, and now I am able to solve this variant of the producer-consumer problem **without wasting CPU cycles and spinning my CPU.** Yay!
 
+**This repo is my testing/experimentation code that proves that I can indeed synchronise two processes in an ARMv7 and an x86 environment using SHM.** Now that this works, it should be very easy to just scale this to my library-calling project. 
+
 ### Try It
 
 #### ArchLinux ARM Side

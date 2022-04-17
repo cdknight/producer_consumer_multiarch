@@ -25,7 +25,9 @@ int main() {
       shm_seg->op_buffer[i]++;
       // printf("shm_seg[%d] %d\n", i, shm_seg->op_buffer[i]);
     }
-    // sleep for 0.2s since lol
+    // sleep for 0.2s since otherwise the program moves too fast (since the
+    // client's operations are not expensive enough), causing the CPU to max out
+    // (incrementing 8 integers is really not very real-life).
     nanosleep((const struct timespec[]){{0, 100000000L}}, NULL);
 
     drepper_unlock(&shm_seg->data_mtx);
